@@ -12,28 +12,12 @@ class TestJsettings(unittest.TestCase):
         self.errfname = 'error_test.log'
         self.settingsfname = 'settings_test.json'
         self.schemafname = 'settings_schema_test.json'
+        self.remove_all()
         self.settings = Jsettings(settingsfname=self.settingsfname,
                                   schemafname=self.schemafname)
         logging.basicConfig(level=logging.INFO,
                             filename=self.errfname,
                             format="%(levelname)s %(message)s")
-        
-    def test_error_logging(self):
-        '''Test saving logging'''
-        #writing log mesages to logfile
-        self.remove_all()
-        self.settings.loggerchoose('info level')
-        self.settings.loggerchoose('warning level', 'warning')
-        self.settings.loggerchoose('error level', 'error')
-        with open(self.errfname, encoding='utf-8') as f:
-            errlilst = f.readlines()
-            self.assertEqual(errlilst[0], 'INFO info level\n')
-            self.assertEqual(errlilst[1], 'WARNING warning level\n')
-            self.assertEqual(errlilst[2], 'ERROR error level\n')
-
-    def test_exception_raising(self):
-        '''Test exception raized when bad loglevel'''
-        self.assertRaises(self.settings.JsettingsError, self.settings.loggerchoose, 'Bad level', 'bad level')
 
     def save_to_json(self, fname, data):
         '''Small function for saving dict to json'''
@@ -45,14 +29,42 @@ class TestJsettings(unittest.TestCase):
         for fname in [self.settingsfname, self.schemafname]:
             if os.path.exists(fname):
                 os.remove(fname)
-        if os.path.exists(self.errfname):
-            with open(fname, "w", encoding='utf-8') as f:
-                f.write('')
 
-    def test_create_simple_conf(self):
+    def test_000(self):
+        '''Init clear log'''
+        with open(self.errfname, 'w', encoding='utf-8') as f:
+            f.write('')
+
+    def test_001_error_logging(self):
+        '''Test saving logging'''
+        logging.info('Test %s started', '001')
+        #writing log mesages to logfile
+        self.settings.loggerchoose('info level')
+        self.settings.loggerchoose('warning level', 'warning')
+        self.assertRaises(self.settings.jsettingserror,
+                          self.settings.loggerchoose,
+                          'error level',
+                          'error')
+        with open(self.errfname, encoding='utf-8') as f:
+            errlilst = f.readlines()
+            self.assertEqual(errlilst[-3], 'INFO info level\n')
+            self.assertEqual(errlilst[-2], 'WARNING warning level\n')
+            self.assertEqual(errlilst[-1], 'ERROR error level\n')
+
+    def test_002_exception_raising(self):
+        '''Test exception raized when bad loglevel'''
+        logging.info('Test %s started', '002')
+        self.assertRaises(self.settings.jsettingserror,
+                          self.settings.loggerchoose,
+                          'Bad level', 
+                          'bad level')
+
+    def test_003_create_simple_conf(self):
         '''Create simple conf, schema and checking loaded conf'''
+        logging.info('Test %s started', '003')
         settings = {'testint': 1}
         self.save_to_json(self.settingsfname, settings)
+        logging.info('Settings: %s', settings)
         schema = {'type': 'object',
                   'properties': {
                       'testint': {'type': 'number'}
@@ -60,25 +72,49 @@ class TestJsettings(unittest.TestCase):
                   'required': ['testint']
                   }
         self.save_to_json(self.schemafname, schema)
+        logging.info('Schema: %s', schema)
         self.settings.load_settings()
+
         for key, val in self.settings.full.items():
             self.assertEqual(val, settings[key])
 
-    def test_miss_conf(self):
+    def test_004_miss_conf(self):
         '''Check error in log when settings file is missing'''
-        self.settings.loggerchoose('info level')
-        #self.settings.load_settings()
-        '''
+        logging.info('Test %s started', '004')
+        schema = {'type': 'object',
+                  'properties': {
+                      'testint': {'type': 'number'}
+                    },
+                  'required': ['testint']
+                  }
+        self.save_to_json(self.schemafname, schema)
+        self.assertRaises(self.settings.jsettingserror,
+                          self.settings.load_settings)
         with open(self.errfname, encoding='utf-8') as f:
             errlilst = f.readlines()
-            self.assertEqual(errlilst[0], 'INFO info level\n')
-        '''
+            self.assertEqual(errlilst[-1],
+                             f'ERROR No such file or directory: {self.settingsfname}\n')
 
-    def tearDown(self):
-        self.remove_all()
-        if os.path.exists(self.errfname):
-            os.remove(self.errfname)
+    def test_005_bad_config(self):
+        '''Config has bad datatype to scheme'''
+        logging.info('Test %s started', '005')
+        settings = {'testint': 1}
+        self.save_to_json(self.settingsfname, settings)
+        logging.info('Settings: %s', settings)
+        schema = {'type': 'object',
+                  'properties': {
+                      'testint': {'type': 'string'}
+                    },
+                  'required': ['testint']
+                  }
+        self.save_to_json(self.schemafname, schema)
+        logging.info('Schema: %s', schema)
+        self.assertRaises(self.settings.jsettingserror,
+                          self.settings.load_settings)
 
+    def test_last(self):
+        '''Final events before exit'''
+        logging.info('Test %s started', 'last')
 
 if __name__ == '__main__':
     unittest.main()

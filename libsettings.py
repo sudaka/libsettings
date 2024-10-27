@@ -7,9 +7,11 @@ from jsonschema.exceptions import ValidationError
 from jsonschema.exceptions import SchemaError
 
 class JsettingsError(Exception):
+    '''Jsettings error class'''
     pass
 
 class Jsettings():
+    '''Main jsettings class'''
     def __init__(self,
                  settingsfname: str = 'settings.json',
                  schemafname: str = 'settings_schema.json',
@@ -18,7 +20,7 @@ class Jsettings():
         self.schemafname = schemafname
         self.logtoconsole = log_to_console
         self.full = {}
-        self.JsettingsError = JsettingsError
+        self.jsettingserror = JsettingsError
 
     def loggerchoose(self, loggingtext: str = '', loglevel: str = 'info'):
         '''Choose a way to logging errors'''
@@ -27,8 +29,10 @@ class Jsettings():
         else:
             if loglevel in ['info', 'warning', 'error']:
                 getattr(logging, loglevel)(loggingtext)
+                if loglevel in ['error']:
+                    raise self.jsettingserror(loggingtext)
             else:
-                raise self.JsettingsError(
+                raise self.jsettingserror(
                     f'Log level {loglevel} not in supported levels list (info, warning, error)'
                     )
 
@@ -56,11 +60,10 @@ class Jsettings():
         if (len(settingsdict) > 0) and (len(schemadict) > 0):
             try:
                 validate(instance=settingsdict, schema=schemadict)
-            except ValidationError as e:
-                self.loggerchoose(e)
-            except SchemaError as e:
-                self.loggerchoose(e)
-            else:
                 self.full = settingsdict
+            except ValidationError as e:
+                self.loggerchoose(e, 'error')
+            except SchemaError as e:
+                self.loggerchoose(e, 'error')
         else:
             self.loggerchoose('Schema or settings is empty', 'warning')

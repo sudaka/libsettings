@@ -1,2 +1,5 @@
 # libsettings
-Python library for working with json settings file
+Python library for working with json settings file.
+
+Usage:
+

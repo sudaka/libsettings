@@ -19,7 +19,7 @@ class Jsettings():
         self.settingsfname = settingsfname
         self.schemafname = schemafname
         self.logtoconsole = log_to_console
-        self.full = {}
+        self.full_settings_dict = {}
         self.jsettingserror = JsettingsError
 
     def loggerchoose(self, loggingtext: str = '', loglevel: str = 'info'):
@@ -52,18 +52,27 @@ class Jsettings():
             self.loggerchoose(f'No such file or directory: {fname}', 'error')
         return outdict
 
+    def _check_attr_names(self):
+        '''Checking first level settings names to added it in attributes'''
+        settings_attrs = set(self.__dict__.keys())
+        new_attrs = set(self.full_settings_dict.keys())
+        bad_attrs = new_attrs.intersection(settings_attrs)
+        if len(bad_attrs) > 0:
+            self.loggerchoose(f'Attributes {bad_attrs} can\'t be imported.', 'error')
+        for key, val in self.full_settings_dict.items():
+            setattr(self, key, val)
+
+
     def load_settings(self):
         '''Checking and loading settings'''
-        self.full = {}
+        self.full_settings_dict = {}
         settingsdict = self._load_json_file(self.settingsfname)
         schemadict = self._load_json_file(self.schemafname)
-        if (len(settingsdict) > 0) and (len(schemadict) > 0):
-            try:
-                validate(instance=settingsdict, schema=schemadict)
-                self.full = settingsdict
-            except ValidationError as e:
-                self.loggerchoose(e, 'error')
-            except SchemaError as e:
-                self.loggerchoose(e, 'error')
-        else:
-            self.loggerchoose('Schema or settings is empty', 'warning')
+        try:
+            validate(instance=settingsdict, schema=schemadict)
+            self.full_settings_dict = settingsdict
+            self._check_attr_names()
+        except ValidationError as e:
+            self.loggerchoose(e, 'error')
+        except SchemaError as e:
+            self.loggerchoose(e, 'error')

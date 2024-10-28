@@ -75,7 +75,7 @@ class TestJsettings(unittest.TestCase):
         logging.info('Schema: %s', schema)
         self.settings.load_settings()
 
-        for key, val in self.settings.full.items():
+        for key, val in self.settings.full_settings_dict.items():
             self.assertEqual(val, settings[key])
 
     def test_004_miss_conf(self):
@@ -112,9 +112,53 @@ class TestJsettings(unittest.TestCase):
         self.assertRaises(self.settings.jsettingserror,
                           self.settings.load_settings)
 
+    def test_006_unsupported_attrnames(self):
+        '''Importing unsupported name \'full_settings_dict\' '''
+        logging.info('Test %s started', '006')
+        settings = {'full_settings_dict': 1}
+        self.save_to_json(self.settingsfname, settings)
+        logging.info('Settings: %s', settings)
+        schema = {'type': 'object',
+                  'properties': {
+                      'full_settings_dict': {'type': 'number'}
+                    }
+                  }
+        self.save_to_json(self.schemafname, schema)
+        logging.info('Schema: %s', schema)
+        self.assertRaises(self.settings.jsettingserror,
+                          self.settings.load_settings)
+
+    def test_007_load_attributes(self):
+        '''Importing settings to attributes'''
+        logging.info('Test %s started', '007')
+        settings = {'testint': 1,
+                    'testlist': [2,3],
+                    'testobj': {'testint': 4}
+                    }
+        self.save_to_json(self.settingsfname, settings)
+        logging.info('Settings: %s', settings)
+        schema = {'type': 'object',
+                  'properties': {
+                      'testint': {'type': 'number'},
+                      'testlist': {'type': 'array',
+                                   'items': {'type': 'number'}},
+                      'testobj': {'type': 'object',
+                                  'properties': {'testint': {'type': 'number'}
+                                  }}
+                    }
+                  }
+        self.save_to_json(self.schemafname, schema)
+        logging.info('Schema: %s', schema)
+        self.settings.load_settings()
+        self.assertEqual(self.settings.testint, settings['testint'])
+        for i, element in enumerate(settings['testlist']):
+            self.assertEqual(self.settings.testlist[i], element)
+        for key, val in settings['testobj'].items():
+            self.assertEqual(val, self.settings.testobj[key])
+
     def test_last(self):
         '''Final events before exit'''
-        logging.info('Test %s started', 'last')
+        logging.info('Tests finished')
 
 if __name__ == '__main__':
     unittest.main()

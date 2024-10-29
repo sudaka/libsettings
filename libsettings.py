@@ -24,17 +24,19 @@ class Jsettings():
 
     def loggerchoose(self, loggingtext: str = '', loglevel: str = 'info'):
         '''Choose a way to logging errors'''
-        if self.logtoconsole:
-            print(f'{loglevel}: {loggingtext}')
-        else:
+        if loglevel not in ['info', 'warning', 'error']:
+            raise self.jsettingserror(
+                f'Log level {loglevel} not in supported levels list (info, warning, error)'
+                )
+        if not self.logtoconsole:
             if loglevel in ['info', 'warning', 'error']:
                 getattr(logging, loglevel)(loggingtext)
-                if loglevel in ['error']:
-                    raise self.jsettingserror(loggingtext)
             else:
                 raise self.jsettingserror(
                     f'Log level {loglevel} not in supported levels list (info, warning, error)'
                     )
+        if loglevel in ['error']:
+            raise self.jsettingserror(loggingtext)
 
     def _load_json_file(self, fname: str) -> dict:
         '''Load json from file'''

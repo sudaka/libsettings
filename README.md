@@ -39,3 +39,13 @@ print(mysettings.testint)
 ```
 After this, first level of jsonsettingsfname will be imported in attributes
 of mysettings. It will be print a number '1'.
+
+If you don't use logging, code can be like that:
+```
+from libsettings import Jsettings
+
+mysettings = Jsettings(settingsfname='mysettings.json',
+                          schemafname='myschema.json', 
+                          log_to_console=True)
+mysettings.load_settings()
+```
